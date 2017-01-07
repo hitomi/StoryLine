@@ -6,12 +6,15 @@
     <div 
       id="draw-area"
       @scroll="onscroll">
+      <button @click="addnew()">+</button>
       <text-card
-        :style="h1style"
+        v-for="story in stories"
+        :story="story"
         @mouseenter="mouseenter"
         @mousedown="mousedown"
         @mouseleave="mouseleave"
-        @portline="portline">
+        @portline="portline"
+        @portlineend="portlineend">
         {{msg}}
       </text-card>
     </div>
@@ -22,6 +25,8 @@
     background: url(../assets/grid.png);
     overflow: hidden;
     position: relative;
+    -webkit-user-drag: none; 
+    user-select: none;
   }
   #story-board.moving {
     cursor: move;
@@ -64,7 +69,46 @@
         svgCanvas: null,
         tempLine: null,
         drawing: false,
-        startPos: null
+        startPos: null,
+        mouseTarget: null,
+        idinc: 1003,
+        stories: [{
+          id: 1001,
+          type: 'text',
+          ports: {
+            in: {
+              default: []
+            },
+            out: {
+              default: []
+            }
+          },
+          layout: {
+            left: 100 + 'px',
+            top: 100 + 'px'
+          },
+          param: {
+            text: '真是风和日丽的一天。'
+          }
+        }, {
+          id: 1002,
+          type: 'text',
+          ports: {
+            in: {
+              default: []
+            },
+            out: {
+              default: []
+            }
+          },
+          layout: {
+            left: 200 + 'px',
+            top: 400 + 'px'
+          },
+          param: {
+            text: '今天天气不错。'
+          }
+        }]
       }
     },
     components: {
@@ -91,6 +135,27 @@
       mouseleave (ev) {
         this.isMoving = false
       },
+      addnew () {
+        this.stories.push({
+          id: this.idinc++,
+          type: 'text',
+          ports: {
+            in: {
+              default: []
+            },
+            out: {
+              default: []
+            }
+          },
+          layout: {
+            left: (Math.ceil(Math.random() * 1000)) + 'px',
+            top: (Math.ceil(Math.random() * 600)) + 'px'
+          },
+          param: {
+            text: '今天天气不错。'
+          }
+        })
+      },
       portline (ev, vtarget) {
         let $target = $(ev.target)
         let startPosition = $target.offset()
@@ -105,8 +170,11 @@
         let scrollTop = target.scrollTop
         this.svgCanvas.viewbox({ x: scrollLeft, y: scrollTop, width: 1000, height: 600 })
       },
-      mousedown (ev) {
+      mousedown (ev, vtarget) {
         this.mouseEv = ev
+        this.mouseTarget = vtarget
+        this.h1offset.x = parseInt(vtarget.layout.left.replace('px', ''))
+        this.h1offset.y = parseInt(vtarget.layout.top.replace('px', ''))
         this.h1style.transition = 'initial'
         console.log('mousedown')
       },
@@ -128,12 +196,23 @@
           this.tempLine.remove()
           this.tempLine = null
         }
-        // console.log('up', ev)
+        console.log('up', ev)
+      },
+      portlineend (ev, vtarget) {
+        // 123
+        console.log('upout', ev)
+        this.drawing = false
+        if (this.tempLine != null) {
+          this.tempLine = null
+        }
+        ev.stopPropagation()
       },
       mousemove (ev) {
         if (this.drawing && this.tempLine != null) {
-          let x1 = this.startPos[0] + 40
-          let y1 = this.startPos[1]
+          let scrollX = $('#draw-area').prop('scrollLeft')
+          let scrollY = $('#draw-area').prop('scrollTop')
+          let x1 = scrollX + this.startPos[0] + 40
+          let y1 = scrollY + this.startPos[1]
           let x2 = ev.clientX - 40
           let y2 = ev.clientY
           let xDiff = y1 - y2
@@ -143,7 +222,6 @@
           let len = Math.min(Math.abs(xHalf), Math.abs(yHalf))
           let yAxis = xDiff > 0 ? -1 : 1
           let xAxis = yDiff > 0 ? -1 : 1
-          console.log(xAxis, yDiff)
           this.tempLine.plot([
             [x1 - 40, y1],
             [x1, y1],
@@ -160,8 +238,8 @@
         let moveY = ev.clientY - originY
         this.h1offset.tempX = this.h1offset.x + moveX
         this.h1offset.tempY = this.h1offset.y + moveY
-        this.h1style.left = this.h1offset.tempX + 'px'
-        this.h1style.top = this.h1offset.tempY + 'px'
+        this.mouseTarget.layout.left = this.h1offset.tempX + 'px'
+        this.mouseTarget.layout.top = this.h1offset.tempY + 'px'
         // if (this.mouseFlag)
         // console.log('move', ev)
       }

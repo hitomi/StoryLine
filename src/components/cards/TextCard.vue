@@ -1,5 +1,7 @@
 <template>
-  <div class="text-card">
+  <div class="text-card"
+    :style="layout"
+    >
     <div class="title" 
     @mousedown="mousedown"
     @mouseenter="mouseenter"
@@ -7,10 +9,10 @@
     > 文本 </div>
     <div class="ports">
       <ul class="in">
-        <li v-for="inp in ports.in"><span class="port" @mousedown="portline"></span> in</li>
+        <li v-for="inp in ports.in"><span class="port" @mousedown="portline" @mouseup="portlineend"></span> in</li>
       </ul>
       <ul class="out">
-        <li v-for="outp in ports.out"><span class="port" @mousedown="portline"></span> out</li>
+        <li v-for="outp in ports.out"><span class="port" @mousedown="portline" @mouseup="portlineend"></span> out</li>
       </ul>
     </div>
     <div class="params">
@@ -18,6 +20,32 @@
     </div>
   </div>
 </template>
+<script>
+  export default {
+    props: ['story'],
+    data () {
+      return this.story
+    },
+    methods: {
+      mouseenter (ev) {
+        this.$emit('mouseenter', ev)
+      },
+      portline (ev) {
+        this.$emit('portline', ev, this)
+      },
+      portlineend (ev) {
+        this.$emit('portlineend', ev, this)
+      },
+      mouseleave (ev) {
+        this.$emit('mouseleave', ev)
+      },
+      mousedown (ev) {
+        this.$emit('mousedown', ev, this)
+      }
+    }
+  }
+
+</script>
 <style lang="less" scoped>
   @color-text-card: #43af00;
   @color-border: #969696;
@@ -108,43 +136,3 @@
   }
 
 </style>
-<script>
-  export default {
-    data () {
-      return {
-        id: 1001,
-        type: 'text',
-        ports: {
-          in: {
-            default: []
-          },
-          out: {
-            default: []
-          }
-        },
-        layout: {
-          x: 100,
-          y: 100
-        },
-        param: {
-          text: '真是风和日丽的一天。'
-        }
-      }
-    },
-    methods: {
-      mouseenter (ev) {
-        this.$emit('mouseenter', ev)
-      },
-      portline (ev) {
-        this.$emit('portline', ev, this)
-      },
-      mouseleave (ev) {
-        this.$emit('mouseleave', ev)
-      },
-      mousedown (ev) {
-        this.$emit('mousedown', ev)
-      }
-    }
-  }
-
-</script>
