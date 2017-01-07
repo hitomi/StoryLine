@@ -1,24 +1,17 @@
-<template>
-  <div class="text-card"
-    :style="layout"
-    >
-    <div class="title" 
-    @mousedown="mousedown"
-    @mouseenter="mouseenter"
-    @mouseleave="mouseleave"
-    > 文本 </div>
-    <div class="ports">
-      <ul class="in">
-        <li v-for="inp in ports.in"><span class="port" @mousedown="portline" @mouseup="portlineend"></span> in</li>
-      </ul>
-      <ul class="out">
-        <li v-for="outp in ports.out"><span class="port" @mousedown="portline" @mouseup="portlineend"></span> out</li>
-      </ul>
-    </div>
-    <div class="params">
-      <p>{{param.text}}</p>
-    </div>
-  </div>
+<template lang="pug">
+  .text-card(:style='layout')
+    .title(@mousedown='titleMouseDown', @mouseenter='titleMouseEnter', @mouseleave='titleMouseLeave')  文本 
+    .ports
+      ul.in
+        li(v-for='inp in ports.in')
+          span.port(@mousedown='startLinkIn', @mouseup='endLinkIn', @mouseenter='enterLinkIn', @mouseleave='leaveLinkIn')
+          | in
+      ul.out
+        li(v-for='outp in ports.out')
+          span.port(@mousedown='startLinkOut', @mouseup='endLinkOut', @mouseenter='enterLinkOut', @mouseleave='leaveLinkOut')
+          | out
+    .params
+      p {{param.text}}
 </template>
 <script>
   export default {
@@ -27,24 +20,41 @@
       return this.story
     },
     methods: {
-      mouseenter (ev) {
-        this.$emit('mouseenter', ev)
+      titleMouseEnter (ev) {
+        this.$emit('titleMouseEnter', ev, this)
       },
-      portline (ev) {
-        this.$emit('portline', ev, this)
+      titleMouseLeave (ev) {
+        this.$emit('titleMouseLeave', ev, this)
       },
-      portlineend (ev) {
-        this.$emit('portlineend', ev, this)
+      titleMouseDown (ev) {
+        this.$emit('titleMouseDown', ev, this)
       },
-      mouseleave (ev) {
-        this.$emit('mouseleave', ev)
+      startLinkIn (ev, type) {
+        this.$emit('startLink', ev, this, 'in')
       },
-      mousedown (ev) {
-        this.$emit('mousedown', ev, this)
+      endLinkIn (ev) {
+        this.$emit('endLink', ev, this, 'in')
+      },
+      startLinkOut (ev, type) {
+        this.$emit('startLink', ev, this, 'out')
+      },
+      endLinkOut (ev) {
+        this.$emit('endLink', ev, this, 'out')
+      },
+      enterLinkIn (ev) {
+        this.$emit('enterLink', ev, this, 'in')
+      },
+      leaveLinkIn (ev) {
+        this.$emit('leaveLink', ev, this, 'in')
+      },
+      enterLinkOut (ev) {
+        this.$emit('enterLink', ev, this, 'out')
+      },
+      leaveLinkOut (ev) {
+        this.$emit('leaveLink', ev, this, 'out')
       }
     }
   }
-
 </script>
 <style lang="less" scoped>
   @color-text-card: #43af00;
@@ -88,6 +98,7 @@
       }
 
       .port {
+        box-sizing: border-box;
         margin-top: 5px;
         float: left;
         width: 16px;
