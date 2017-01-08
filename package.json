@@ -13,6 +13,7 @@
     "jquery": "^3.1.1",
     "less": "^2.7.1",
     "less-loader": "^2.2.3",
+    "lodash": "^4.17.4",
     "normalize.css": "^5.0.0",
     "pug": "^2.0.0-beta6",
     "pug-loader": "^2.3.0",

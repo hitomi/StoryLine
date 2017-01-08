@@ -3,20 +3,24 @@
     svg#line-background
     #draw-area(@scroll="onscroll")
       button(@click="addnew()") +
+      button(@click="runStory()") Play
       text-card(
         v-for="story in stories",
         :story="story",
-        @startLink="portline",
+        @enterLink="enterLink",
+        @leaveLink="leaveLink",
+        @startLink="startLink",
         @titleMouseEnter="titleMouseEnter",
         @titleMouseLeave="titleMouseLeave",
-        @enterLink="enterLink",
-        @leaveLink="leaveLink"
+        @titleMouseDown="titleMouseDown"
       ) {{story.msg}}
+      .padding-canvas(:style="{height: layout.padding.height + 'px', width: layout.padding.width + 'px', pointerEvents: 'none'}")
 </template>
 <script>
   import TextCard from './cards/TextCard.vue'
   import SVG from 'svgjs'
   import $ from 'jquery'
+  import Interpreter from '../interpreter'
 
   export default {
     props: ['width', 'height'],
@@ -34,13 +38,20 @@
             status: 0,
             // Temporary position
             pos: {
+              tempX: 0,
+              tempY: 0,
               x: 0,
               y: 0
             },
             // Element reference
-            elRef: null,
+            evRef: null,
             // Vue reference
             vRef: null
+          },
+          // Padding
+          padding: {
+            width: this.width,
+            height: this.height
           }
         },
         // Drawing
@@ -54,50 +65,118 @@
             group: null,
             line: null,
             startSquare: null,
-            endSquare: null
+            endSquare: null,
+            startPos: null,
+            offset: null,
+            linemode: null
           }
         },
-        idinc: 1003,
+        idinc: 5,
         tempLine: null,
         drawing: false,
         tempRect: null,
         offset: null,
         startPos: [],
         stories: [{
-          id: 1001,
-          type: 'text',
-          ports: {
-            in: {
-              default: []
-            },
-            out: {
-              default: []
-            }
-          },
+          id: 0,
+          type: 'base.main',
           layout: {
             left: 100 + 'px',
             top: 100 + 'px'
           },
-          param: {
-            text: '真是风和日丽的一天。'
-          }
-        }, {
-          id: 1002,
-          type: 'text',
           ports: {
-            in: {
-              default: []
-            },
+            in: {},
             out: {
-              default: []
+              content: {
+                name: 'content',
+                select: 'random',
+                links: [{
+                  id: 2,
+                  port: 'content'
+                }, {
+                  id: 3,
+                  port: 'content'
+                }]
+              }
             }
           },
+          params: {
+            'text': '【Start】\n'
+          }
+        }, {
+          id: 2,
+          type: 'base.text',
           layout: {
-            left: 1000 + 'px',
-            top: 400 + 'px'
+            left: 550 + 'px',
+            top: 100 + 'px'
           },
-          param: {
-            text: '今天天气不错。'
+          ports: {
+            in: {
+              content: {
+                name: 'content',
+                select: 'random'
+              }
+            },
+            out: {
+              content: {
+                name: 'content',
+                select: 'random',
+                links: [{
+                  id: 4,
+                  port: 'content'
+                }]
+              }
+            }
+          },
+          params: {
+            text: '今天天气非常不错。\n'
+          }
+        }, {
+          id: 3,
+          type: 'base.text',
+          layout: {
+            left: 550 + 'px',
+            top: 250 + 'px'
+          },
+          ports: {
+            in: {
+              content: {
+                name: 'content',
+                select: 'random'
+              }
+            },
+            out: {
+              content: {
+                name: 'content',
+                select: 'random',
+                links: [{
+                  id: 4,
+                  port: 'content'
+                }]
+              }
+            }
+          },
+          params: {
+            text: '阳光照在身上暖洋洋的，感觉是个好天气呢。\n'
+          }
+        }, {
+          id: 4,
+          type: 'base.log',
+          layout: {
+            left: 1050 + 'px',
+            top: 150 + 'px'
+          },
+          ports: {
+            in: {
+              content: {
+                name: 'content',
+                select: 'random'
+              }
+            },
+            out: {}
+          },
+          params: {
+            text: '【End】'
           }
         }]
       }
@@ -122,31 +201,43 @@
         this.layout.isMoving = true
       },
       titleMouseLeave (ev, vRef) {
-        this.layout.isMoving = false
+        if (this.layout.movingObject.status === 0 && this.background.temp.drawing === false) this.layout.isMoving = false
+      },
+      titleMouseDown (ev, vRef) {
+        this.layout.movingObject.evRef = ev
+        this.layout.movingObject.vRef = vRef
+        this.layout.movingObject.pos.x = parseInt(vRef.layout.left.replace('px', ''))
+        this.layout.movingObject.pos.y = parseInt(vRef.layout.top.replace('px', ''))
+        this.layout.movingObject.vRef.layout.transition = 'initial'
+        this.layout.movingObject.vRef.layout.boxShadow = '0 0 12px 1px #9ad6ba'
+        this.layout.movingObject.status = 1
       },
       enterLink (ev, vRef, type) {
         this.layout.isMoving = true
       },
       leaveLink (ev, vRef, type) {
-        if (!this.drawing) this.layout.isMoving = false
+        if (this.layout.movingObject.status === 0 && this.background.temp.drawing === false) this.layout.isMoving = false
       },
       startLink (ev, vRef, type) {
         // Start Link Object
-      },
-      portline (ev, vtarget) {
         let $target = $(ev.target)
-        this.offset = $('#draw-area').offset()
+        // $target.addClass('active')
+        this.background.temp.offset = $('#draw-area').offset()
         let startPosition = $target.offset()
         let scrollX = $('#draw-area').prop('scrollLeft')
         let scrollY = $('#draw-area').prop('scrollTop')
-        this.startPos = [scrollX + startPosition.left - this.offset.left + 8, scrollY + startPosition.top - this.offset.top + 8]
-        this.tempLine = this.background.svgCanvas.polyline([this.startPos]).fill('none').stroke({ color: '#0099af', width: 8, linejoin: 'bevel' })
-        this.background.svgCanvas.rect(16, 16).cx(this.startPos[0]).cy(this.startPos[1]).radius(4).fill('#0099af')
-        this.tempRect = this.background.svgCanvas.rect(16, 16).cx(this.startPos[0]).cy(this.startPos[1]).radius(4).fill('#0099af')
-        this.drawing = true
+        this.background.temp.startPos = {
+          x: scrollX + startPosition.left - this.background.temp.offset.left + 8,
+          y: scrollY + startPosition.top - this.background.temp.offset.top + 8
+        }
+        this.background.temp.linemode = type
+        this.background.temp.group = this.background.svgCanvas.group()
+        this.background.temp.line = this.background.temp.group.polyline([[this.background.temp.startPos.x, this.background.temp.startPos.y]]).fill('none').stroke({ color: '#0099af', width: 8, linejoin: 'bevel' })
+        this.background.temp.startSquare = this.background.temp.group.rect(16, 16).cx(this.background.temp.startPos.x).cy(this.background.temp.startPos.y).radius(4).fill('#0099af')
+        this.background.temp.endSquare = this.background.temp.group.rect(16, 16).cx(this.background.temp.startPos.x).cy(this.background.temp.startPos.y).radius(4).fill('#0099af')
+        this.background.temp.drawing = true
       },
       onscroll (ev) {
-        console.log(ev)
         let target = ev.target
         let scrollLeft = target.scrollLeft
         let scrollTop = target.scrollTop
@@ -154,20 +245,70 @@
       },
       onMouseMove (ev) {
         // Return if moving flag is false
-        // if (!this.layout.isMoving) return
-        if (this.drawing && this.tempLine != null) {
+        if (this.layout.movingObject.status > 0) {
+          let originX = this.layout.movingObject.evRef.clientX
+          let originY = this.layout.movingObject.evRef.clientY
+          let moveX = ev.clientX - originX
+          let moveY = ev.clientY - originY
+          this.layout.movingObject.pos.tempX = this.layout.movingObject.pos.x + moveX
+          this.layout.movingObject.pos.tempY = this.layout.movingObject.pos.y + moveY
+          this.layout.movingObject.vRef.layout.left = this.layout.movingObject.pos.tempX + 'px'
+          this.layout.movingObject.vRef.layout.top = this.layout.movingObject.pos.tempY + 'px'
+        }
+        if (this.background.temp.drawing) {
           let scrollX = $('#draw-area').prop('scrollLeft')
           let scrollY = $('#draw-area').prop('scrollTop')
-          let xOffset = this.offset.left
-          let yOffset = this.offset.top
-          let x1 = this.startPos[0]
-          let y1 = this.startPos[1]
+          let xOffset = this.background.temp.offset.left
+          let yOffset = this.background.temp.offset.top
+          let x1 = this.background.temp.startPos.x
+          let y1 = this.background.temp.startPos.y
           let x2 = scrollX + ev.clientX - xOffset
           let y2 = scrollY + ev.clientY - yOffset
-          console.log(x1, y1)
-          this.tempLine.plot(this.calcuPolyline(x1, y1, x2, y2, 'off'))
-          this.tempRect.cx(x2).cy(y2)
+          this.background.temp.line.plot(this.calcuPolyline(x1, y1, x2, y2, this.background.temp.linemode))
+          this.background.temp.endSquare.cx(x2).cy(y2)
         }
+      },
+      mouseup (ev) {
+        if (this.layout.movingObject.status > 0) {
+          if (this.layout.movingObject.pos.tempX < 0) {
+            this.layout.movingObject.pos.tempX = 0
+            this.layout.movingObject.vRef.layout.left = this.layout.movingObject.pos.tempX + 'px'
+          }
+          if (this.layout.movingObject.pos.tempY < 0) {
+            this.layout.movingObject.pos.tempY = 0
+            this.layout.movingObject.vRef.layout.top = this.layout.movingObject.pos.tempY + 'px'
+          }
+          this.layout.movingObject.vRef.layout.transition = 'left .5s ease, top .5s ease'
+          this.layout.movingObject.pos.x = this.layout.movingObject.pos.tempX
+          this.layout.movingObject.pos.y = this.layout.movingObject.pos.tempY
+          this.layout.movingObject.vRef.layout.boxShadow = 'none'
+          this.layout.movingObject.evRef = null
+          this.layout.movingObject.vRef = null
+          this.layout.isMoving = false
+          this.layout.movingObject.status = 0
+        }
+        // line mode
+        if (this.background.temp.drawing) {
+          this.background.temp.drawing = false
+        }
+        // if (this.h1offset.tempX < 0) {
+        //   this.h1offset.tempX = 0
+        //   this.h1style.left = this.h1offset.tempX + 'px'
+        // }
+        // if (this.h1offset.tempY < 0) {
+        //   this.h1offset.tempY = 0
+        //   this.h1style.top = this.h1offset.tempY + 'px'
+        // }
+        // this.h1style.transition = 'left .5s ease, top .5s ease'
+        // this.h1offset.x = this.h1offset.tempX
+        // this.h1offset.y = this.h1offset.tempY
+        // this.mouseEv = null
+        // this.drawing = false
+        // if (this.tempLine != null) {
+        //   this.tempLine.remove()
+        //   this.tempLine = null
+        // }
+        // console.log('up', ev)
       },
       calcuPolyline (x1, y1, x2, y2, type) {
         // Direction
@@ -194,6 +335,10 @@
           [x2, y2],
           [x2 + fix * linePrefix, y2]
         ]
+      },
+      runStory () {
+        let story = new Interpreter(this.stories)
+        story.run()
       }
     }
   }
@@ -205,11 +350,31 @@
     overflow: hidden;
     position: relative;
   }
+
+  #story-board ::-webkit-scrollbar {
+	  width: 16px;
+  }
+
+  #story-board ::-webkit-scrollbar-thumb {
+    border: 4px #fff solid;
+    -webkit-border-radius: 13px;
+    background-color: #ccc;
+  }
+
+  #story-board ::-webkit-scrollbar-thumb:hover {
+    background-color: #7e7e7e;
+  }
+
+  #story-board ::-webkit-scrollbar-track-piece {
+    background-color: #fff;
+  }
+
   #story-board.moving {
     cursor: move;
     -webkit-user-drag: none; 
     user-select: none;
   }
+
   #draw-area {
     position: absolute;
     top: 0;
@@ -219,6 +384,7 @@
     opacity: 0.8;
     overflow: scroll;
   }
+
   h1 {
     position: absolute;
   }

@@ -5,13 +5,13 @@
       ul.in
         li(v-for='inp in ports.in')
           span.port(@mousedown='startLinkIn', @mouseup='endLinkIn', @mouseenter='enterLinkIn', @mouseleave='leaveLinkIn')
-          | in
+          | {{ inp.name }}
       ul.out
         li(v-for='outp in ports.out')
-          span.port(@mousedown='startLinkOut', @mouseup='endLinkOut', @mouseenter='enterLinkOut', @mouseleave='leaveLinkOut')
-          | out
+          span.port(@mousedown='startLinkOut', @mouseup='endLinkOut', @mouseenter='enterLinkOut', @mouseleave='leaveLinkOut', :story-name='outp.name')
+          | {{ outp.name }}
     .params
-      p {{param.text}}
+      p {{params.text}}
 </template>
 <script>
   export default {
@@ -29,13 +29,13 @@
       titleMouseDown (ev) {
         this.$emit('titleMouseDown', ev, this)
       },
-      startLinkIn (ev, type) {
+      startLinkIn (ev) {
         this.$emit('startLink', ev, this, 'in')
       },
       endLinkIn (ev) {
         this.$emit('endLink', ev, this, 'in')
       },
-      startLinkOut (ev, type) {
+      startLinkOut (ev) {
         this.$emit('startLink', ev, this, 'out')
       },
       endLinkOut (ev) {
@@ -107,12 +107,38 @@
         background: #eee;
         border: 1px #aaa solid;
         margin-right: 8px;
+        position: relative;
+        
+        &.active {
+
+          border: none;
+          background: #0099af;
+
+          &:after {
+            content: '　';
+            display: block;
+            position: absolute;
+            height: 8px;
+            width: 9px;
+            top: 4px;
+            right: 16px;
+            background: #0099af;
+          }
+        }
+
       }
 
       .out .port {
         float: right;
         margin-right: 0;
         margin-left: 8px;
+
+        &.active {
+          &:after {
+            left: 16px;
+            right: auto;
+          }
+        }
       }
 
       > .in {
