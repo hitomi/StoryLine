@@ -13,8 +13,10 @@ export default class Interpreter {
     if (_.isUndefined(main)) return
     console.log('> Player start')
     this._runCount = 0
+    this._final_result = ''
     this._innerRun(main)
     console.log(`> ${this._runCount} line(s)`)
+    return this._final_result
   }
   // inner runner
   _innerRun (story, option = {}) {
@@ -25,6 +27,7 @@ export default class Interpreter {
     let selfParams = story.params
     let runResult = func(option, selfParams)
     this._runCount++
+    if (story.type === 'base.log') this._final_result = runResult
     _.each(outPorts, (v, k) => {
       let links = v.links
       if (links.length > 0) {
@@ -36,5 +39,6 @@ export default class Interpreter {
         this._innerRun(this.actions[selected.id], inputData)
       }
     })
+    return runResult
   }
 }

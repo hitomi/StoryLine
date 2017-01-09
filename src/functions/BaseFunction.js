@@ -58,5 +58,6 @@ export default class BaseFunction {
   static log (option = {'content': ''}, params = {'text': ''}) {
     let content = option.content + '\n' + params.text
     console.log(content)
+    return content
   }
 }

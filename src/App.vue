@@ -1,17 +1,22 @@
 <template>
   <div id="app">
     <story-board :width="storyBoard.width" :height="storyBoard.height"></story-board>
-    <button @click="storyBoard.height += 50">Size</button>
   </div>
 </template>
 
 <script>
 import StoryBoard from './components/StoryBoard'
+import $ from 'jquery'
 
 export default {
   name: 'app',
   components: {
     StoryBoard
+  },
+  mounted () {
+    window.addEventListener('resize', this.onResize)
+    this.storyBoard.width = $(window).width()
+    this.storyBoard.height = $(window).height()
   },
   data () {
     return {
@@ -20,6 +25,12 @@ export default {
         height: 900
       }
     }
+  },
+  methods: {
+    onResize (ev) {
+      this.storyBoard.width = $(window).width()
+      this.storyBoard.height = $(window).height()
+    }
   }
 }
 </script>
@@ -27,6 +38,7 @@ export default {
 <style>
 body {
   margin: 0px;
+  overflow: hidden;
 }
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;

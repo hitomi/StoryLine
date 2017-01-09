@@ -1,15 +1,15 @@
 <template lang="pug">
   .text-card(:style='layout')
-    .title(@mousedown='titleMouseDown', @mouseenter='titleMouseEnter', @mouseleave='titleMouseLeave')  文本 
+    .title(@mousedown='titleMouseDown', @mouseenter='titleMouseEnter', @mouseleave='titleMouseLeave') {{ alias || '文本' }}
     .ports
       ul.in
         li(v-for='inp in ports.in')
           span.port(@mousedown='startLinkIn', @mouseup='endLinkIn', @mouseenter='enterLinkIn', @mouseleave='leaveLinkIn', :story-name='inp.name', :class="{active: inp.links && inp.links.length}")
-          | {{ inp.name }}
+          | {{ inp.alias || inp.name }}
       ul.out
         li(v-for='outp in ports.out')
           span.port(@mousedown='startLinkOut', @mouseup='endLinkOut', @mouseenter='enterLinkOut', @mouseleave='leaveLinkOut', :story-name='outp.name', :class="{active: outp.links && outp.links.length}")
-          | {{ outp.name }}
+          | {{ outp.alias || outp.name }}
     .params(:contenteditable='edit', :class='{edit: edit}', @dblclick="changeEditState") {{params.text}}
 </template>
 <script>

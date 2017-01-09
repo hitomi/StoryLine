@@ -5,6 +5,8 @@
       .toolbar
         button(@click="addNewStory()") +
         button(@click="runStory()") Play
+        button(@click="togglePanel()") Hide Output: {{ hideOutputPanel }}
+        .output(v-html='output', :class='{ hide: hideOutputPanel }')
       text-card(
         v-for="story in stories",
         :story="story",
@@ -33,6 +35,8 @@
     },
     data () {
       return {
+        output: '',
+        hideOutputPanel: true,
         // Temporary
         layout: {
           isMoving: false,
@@ -82,34 +86,40 @@
         stories: [{
           id: 0,
           type: 'base.main',
+          alias: '开始',
           layout: {
             left: 100 + 'px',
-            top: 100 + 'px'
+            top: 100 + 'px',
+            width: 200 + 'px'
           },
           ports: {
             in: {},
             out: {
               content: {
                 name: 'content',
+                alias: 'out',
                 select: 'random',
                 links: []
               }
             }
           },
           params: {
-            'text': '【Start】'
+            'text': '【开始】'
           }
         }, {
           id: 1,
           type: 'base.log',
+          alias: '结束',
           layout: {
             left: 500 + 'px',
-            top: 100 + 'px'
+            top: 100 + 'px',
+            width: 200 + 'px'
           },
           ports: {
             in: {
               content: {
                 name: 'content',
+                alias: 'in',
                 select: 'random',
                 links: []
               }
@@ -117,7 +127,7 @@
             out: {}
           },
           params: {
-            text: '【End】'
+            text: '【结束】'
           }
         }]
       }
@@ -153,10 +163,10 @@
             let y2 = posTo.top + 8
             // draw
             link._line = {}
-            link._line.group = this.background.svgCanvas.group()
-            link._line.line = link._line.group.polyline([this.calcuPolyline(x1, y1, x2, y2, 'out')]).fill('none').stroke({ color: '#0099af', width: 8, linejoin: 'bevel' })
-            link._line.startSquare = link._line.group.rect(16, 16).cx(x1).cy(y1).radius(4).fill('#0099af')
-            link._line.endSquare = link._line.group.rect(16, 16).cx(x2).cy(y2).radius(4).fill('#0099af')
+            link._line.group = this.background.svgCanvas.group().stroke({ color: '#0099af', width: 8, linejoin: 'bevel' }).fill('#0099af')
+            link._line.line = link._line.group.polyline([this.calcuPolyline(x1, y1, x2, y2, 'out')]).fill('none')
+            link._line.startSquare = link._line.group.rect(16, 16).cx(x1).cy(y1).radius(4).fill('#0099af').stroke({ width: 0 })
+            link._line.endSquare = link._line.group.rect(16, 16).cx(x2).cy(y2).radius(4).fill('#0099af').stroke({ width: 0 })
             // copy to in port
             let inCard = this.stories[_.findIndex(this.stories, (o) => o.id === link.id)]
             let inLinks = inCard.ports.in[link.port].links
@@ -209,10 +219,14 @@
         this.background.temp.port = $target.attr('story-name')
         this.background.temp.vRef = vRef
         this.background.temp.evRef = ev
-        this.background.temp.group = this.background.svgCanvas.group()
-        this.background.temp.line = this.background.temp.group.polyline([[this.background.temp.startPos.x, this.background.temp.startPos.y]]).fill('none').stroke({ color: '#0099af', width: 8, linejoin: 'bevel' })
-        this.background.temp.startSquare = this.background.temp.group.rect(16, 16).cx(this.background.temp.startPos.x).cy(this.background.temp.startPos.y).radius(4).fill('#0099af')
-        this.background.temp.endSquare = this.background.temp.group.rect(16, 16).cx(this.background.temp.startPos.x).cy(this.background.temp.startPos.y).radius(4).fill('#0099af')
+        this.background.temp.group = this.background.svgCanvas.group().stroke({ color: '#0099af', width: 8, linejoin: 'bevel' }).fill('#0099af')
+        // let tempGroup = this.background.temp.group
+        // tempGroup.dblclick((ev) => {
+        //   tempGroup.stroke({ color: '#af0e00' }).fill('#af0e00')
+        // })
+        this.background.temp.line = this.background.temp.group.polyline([[this.background.temp.startPos.x, this.background.temp.startPos.y]]).fill('none')
+        this.background.temp.startSquare = this.background.temp.group.rect(16, 16).cx(this.background.temp.startPos.x).cy(this.background.temp.startPos.y).radius(4).stroke({ width: 0 })
+        this.background.temp.endSquare = this.background.temp.group.rect(16, 16).cx(this.background.temp.startPos.x).cy(this.background.temp.startPos.y).radius(4).stroke({ width: 0 })
         this.background.temp.drawing = true
       },
       endLink (ev, vRef, type) {
@@ -318,6 +332,14 @@
           this.layout.movingObject.pos.tempY = this.layout.movingObject.pos.y + moveY
           this.layout.movingObject.vRef.layout.left = this.layout.movingObject.pos.tempX + 'px'
           this.layout.movingObject.vRef.layout.top = this.layout.movingObject.pos.tempY + 'px'
+          if (ev.clientX + 50 > this.width) {
+            this.layout.padding.width += 10
+            $('#draw-area').prop('scrollLeft', $('#draw-area').prop('scrollLeft') + 10)
+          }
+          if (ev.clientY + 50 > this.width) {
+            this.layout.padding.width += 10
+            $('#draw-area').prop('scrollTop', $('#draw-area').prop('scrollTop') + 10)
+          }
           // Move Lines
           this.lineMove()
         }
@@ -364,17 +386,20 @@
         }
       },
       addNewStory () {
+        let scrollX = $('#draw-area').prop('scrollLeft')
+        let scrollY = $('#draw-area').prop('scrollTop')
         let story = {
           id: this.idinc++,
           type: 'base.text',
           layout: {
-            left: 550 + 'px',
-            top: 250 + 'px'
+            left: scrollX + (this.width / 4) + Math.floor(Math.random() * this.width / 2) + 'px',
+            top: scrollY + (this.height / 4) + Math.floor(Math.random() * this.height / 2) + 'px'
           },
           ports: {
             in: {
               content: {
                 name: 'content',
+                alias: 'in',
                 select: 'random',
                 links: []
               }
@@ -382,6 +407,7 @@
             out: {
               content: {
                 name: 'content',
+                alias: 'out',
                 select: 'random',
                 links: []
               }
@@ -428,7 +454,14 @@
       },
       runStory () {
         let story = new Interpreter(this.stories)
-        story.run()
+        this.output = story.run().replace(/\n/g, '<br>')
+        this.hideOutputPanel = false
+      },
+      togglePanel () {
+        this.hideOutputPanel = !this.hideOutputPanel
+      },
+      exportStories () {
+        // TODO export
       }
     }
   }
@@ -473,12 +506,34 @@
     bottom: 0;
     opacity: 0.8;
     overflow: scroll;
+    pointer-events: none;
+  }
+
+  #draw-area * {
+    pointer-events: auto;
   }
 
   .toolbar {
     position: fixed;
     top: 0;
     left: 0;
+    z-index: 100;
+  }
+
+  .output {
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    height: 233px;
+    overflow-x: scroll;
+    background: #fff;
+    opacity: 0.8;
+    border: 1px #aaa solid;
+  }
+
+  .hide {
+    display: none;
   }
 
   h1 {
