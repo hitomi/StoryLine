@@ -16,8 +16,8 @@ export default {
   data () {
     return {
       storyBoard: {
-        width: 1000,
-        height: 600
+        width: 1400,
+        height: 900
       }
     }
   }

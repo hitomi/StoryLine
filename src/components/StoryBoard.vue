@@ -2,8 +2,9 @@
   #story-board(:class="{moving: layout.isMoving}", :style="{width: width + 'px', height: height + 'px'}")
     svg#line-background
     #draw-area(@scroll="onscroll")
-      button(@click="addNewStory()") +
-      button(@click="runStory()") Play
+      .toolbar
+        button(@click="addNewStory()") +
+        button(@click="runStory()") Play
       text-card(
         v-for="story in stories",
         :story="story",
@@ -472,6 +473,12 @@
     bottom: 0;
     opacity: 0.8;
     overflow: scroll;
+  }
+
+  .toolbar {
+    position: fixed;
+    top: 0;
+    left: 0;
   }
 
   h1 {
