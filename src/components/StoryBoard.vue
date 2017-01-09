@@ -10,6 +10,7 @@
         @enterLink="enterLink",
         @leaveLink="leaveLink",
         @startLink="startLink",
+        @endLink="endLink",
         @titleMouseEnter="titleMouseEnter",
         @titleMouseLeave="titleMouseLeave",
         @titleMouseDown="titleMouseDown"
@@ -237,6 +238,25 @@
         this.background.temp.endSquare = this.background.temp.group.rect(16, 16).cx(this.background.temp.startPos.x).cy(this.background.temp.startPos.y).radius(4).fill('#0099af')
         this.background.temp.drawing = true
       },
+      endLink (ev, vRef, type) {
+        if (type !== this.background.temp.linemode) {
+          ev.stopPropagation()
+          let $target = $(ev.target)
+          let endPosition = $target.offset()
+          let scrollX = $('#draw-area').prop('scrollLeft')
+          let scrollY = $('#draw-area').prop('scrollTop')
+          let xOffset = this.background.temp.offset.left
+          let yOffset = this.background.temp.offset.top
+          let x1 = this.background.temp.startPos.x
+          let y1 = this.background.temp.startPos.y
+          let x2 = scrollX + endPosition.left - xOffset + 8
+          let y2 = scrollY + endPosition.top - yOffset + 8
+          this.background.temp.line.plot(this.calcuPolyline(x1, y1, x2, y2, this.background.temp.linemode))
+          this.background.temp.endSquare.cx(x2).cy(y2)
+          this.background.temp.drawing = false
+          this.layout.isMoving = false
+        }
+      },
       onscroll (ev) {
         let target = ev.target
         let scrollLeft = target.scrollLeft
@@ -289,26 +309,17 @@
         }
         // line mode
         if (this.background.temp.drawing) {
+          this.cleanTempLine()
           this.background.temp.drawing = false
+          this.layout.isMoving = false
         }
-        // if (this.h1offset.tempX < 0) {
-        //   this.h1offset.tempX = 0
-        //   this.h1style.left = this.h1offset.tempX + 'px'
-        // }
-        // if (this.h1offset.tempY < 0) {
-        //   this.h1offset.tempY = 0
-        //   this.h1style.top = this.h1offset.tempY + 'px'
-        // }
-        // this.h1style.transition = 'left .5s ease, top .5s ease'
-        // this.h1offset.x = this.h1offset.tempX
-        // this.h1offset.y = this.h1offset.tempY
-        // this.mouseEv = null
-        // this.drawing = false
-        // if (this.tempLine != null) {
-        //   this.tempLine.remove()
-        //   this.tempLine = null
-        // }
-        // console.log('up', ev)
+      },
+      cleanTempLine () {
+        this.background.temp.group.remove()
+        this.background.temp.group = null
+        this.background.temp.line = null
+        this.background.temp.startSquare = null
+        this.background.temp.endSquare = null
       },
       calcuPolyline (x1, y1, x2, y2, type) {
         // Direction
@@ -348,6 +359,8 @@
   #story-board {
     background: url(../assets/grid.png);
     overflow: hidden;
+    -webkit-user-drag: none; 
+    user-select: none;
     position: relative;
   }
 
@@ -371,8 +384,6 @@
 
   #story-board.moving {
     cursor: move;
-    -webkit-user-drag: none; 
-    user-select: none;
   }
 
   #draw-area {
