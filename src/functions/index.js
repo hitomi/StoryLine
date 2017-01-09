@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import BaseFunction from './base'
+import BaseFunction from './BaseFunction'
 
 export default class StoryFunctions {
   constructor () {
