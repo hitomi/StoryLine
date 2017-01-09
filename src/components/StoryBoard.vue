@@ -5,6 +5,7 @@
       .toolbar
         button(@click="addNewStory()") +
         button(@click="runStory()") Play
+        button(@click="exportStories()") Export
         button(@click="togglePanel()") Hide Output: {{ hideOutputPanel }}
         .output(v-html='output', :class='{ hide: hideOutputPanel }')
       text-card(
@@ -462,6 +463,32 @@
       },
       exportStories () {
         // TODO export
+        let exportData = {
+          idinc: this.idinc,
+          stories: []
+        }
+        _.each(this.stories, (story) => {
+          let obj = _.pick(story, ['id', 'type', 'alias'])
+          obj.layout = _.pick(story.layout, ['left', 'top', 'width'])
+          obj.ports = { in: {}, out: {} }
+          _.each(story.ports.in, (v, k) => {
+            obj.ports.in[k] = _.pick(v, ['name', 'alias', 'select'])
+            obj.ports.in[k].links = []
+            _.each(story.ports.in[k].links, (link) => {
+              obj.ports.in[k].links.push(_.pick(link, ['id', 'port']))
+            })
+          })
+          _.each(story.ports.out, (v, k) => {
+            obj.ports.out[k] = _.pick(v, ['name', 'alias', 'select'])
+            obj.ports.out[k].links = []
+            _.each(story.ports.out[k].links, (link) => {
+              obj.ports.out[k].links.push(_.pick(link, ['id', 'port']))
+            })
+          })
+          obj.params = _.pick(story.params, ['text'])
+          exportData.stories.push(obj)
+        })
+        console.log(JSON.stringify(exportData))
       }
     }
   }
