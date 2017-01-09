@@ -3,7 +3,7 @@ import StoryFunctions from '../functions'
 
 export default class Interpreter {
   constructor (actions = []) {
-    this.actions = _(actions).keyBy('id').mapValues((v) => JSON.parse(JSON.stringify(v))).value()
+    this.actions = _(actions).keyBy('id').value()
     this.story_maps = (new StoryFunctions()).map()
     // console.log(this.actions)
   }

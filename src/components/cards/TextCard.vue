@@ -4,11 +4,11 @@
     .ports
       ul.in
         li(v-for='inp in ports.in')
-          span.port(@mousedown='startLinkIn', @mouseup='endLinkIn', @mouseenter='enterLinkIn', @mouseleave='leaveLinkIn')
+          span.port(@mousedown='startLinkIn', @mouseup='endLinkIn', @mouseenter='enterLinkIn', @mouseleave='leaveLinkIn', :story-name='inp.name', :class="{active: inp.links && inp.links.length}")
           | {{ inp.name }}
       ul.out
         li(v-for='outp in ports.out')
-          span.port(@mousedown='startLinkOut', @mouseup='endLinkOut', @mouseenter='enterLinkOut', @mouseleave='leaveLinkOut', :story-name='outp.name')
+          span.port(@mousedown='startLinkOut', @mouseup='endLinkOut', @mouseenter='enterLinkOut', @mouseleave='leaveLinkOut', :story-name='outp.name', :class="{active: outp.links && outp.links.length}")
           | {{ outp.name }}
     .params
       p {{params.text}}

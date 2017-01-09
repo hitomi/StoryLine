@@ -7,6 +7,7 @@
       text-card(
         v-for="story in stories",
         :story="story",
+        :story-id="story.id"
         @enterLink="enterLink",
         @leaveLink="leaveLink",
         @startLink="startLink",
@@ -21,6 +22,7 @@
   import TextCard from './cards/TextCard.vue'
   import SVG from 'svg.js'
   import $ from 'jquery'
+  import _ from 'lodash'
   import Interpreter from '../interpreter'
 
   export default {
@@ -117,7 +119,11 @@
             in: {
               content: {
                 name: 'content',
-                select: 'random'
+                select: 'random',
+                links: [{
+                  id: 0,
+                  port: 'content'
+                }]
               }
             },
             out: {
@@ -145,7 +151,11 @@
             in: {
               content: {
                 name: 'content',
-                select: 'random'
+                select: 'random',
+                links: [{
+                  id: 0,
+                  port: 'content'
+                }]
               }
             },
             out: {
@@ -173,7 +183,14 @@
             in: {
               content: {
                 name: 'content',
-                select: 'random'
+                select: 'random',
+                links: [{
+                  id: 2,
+                  port: 'content'
+                }, {
+                  id: 3,
+                  port: 'content'
+                }]
               }
             },
             out: {}
@@ -198,6 +215,30 @@
       window.addEventListener('mousemove', this.onMouseMove)
       // Create SVG Canvas
       this.background.svgCanvas = SVG('line-background').size('100%', '100%')
+      // Draw Lines
+      _.each(this.stories, (story) => {
+        _.each(story.ports.out, (v, k) => {
+          let links = v.links
+          if (!_.isArray(links)) return
+          let selfEl = $(`[story-id="${story.id}"] .out [story-name="${k}"]`)
+          _.each(links, (link) => {
+            let targetEl = $(`[story-id="${link.id}"] .in [story-name="${link.port}"]`)
+            let posFrom = selfEl.offset()
+            let posTo = targetEl.offset()
+            // map
+            let x1 = posFrom.left + 8
+            let y1 = posFrom.top + 8
+            let x2 = posTo.left + 8
+            let y2 = posTo.top + 8
+            // draw
+            link._line = {}
+            link._line.group = this.background.svgCanvas.group()
+            link._line.line = link._line.group.polyline([this.calcuPolyline(x1, y1, x2, y2, 'out')]).fill('none').stroke({ color: '#0099af', width: 8, linejoin: 'bevel' })
+            link._line.startSquare = link._line.group.rect(16, 16).cx(x1).cy(y1).radius(4).fill('#0099af')
+            link._line.endSquare = link._line.group.rect(16, 16).cx(x2).cy(y2).radius(4).fill('#0099af')
+          })
+        })
+      })
     },
     methods: {
       titleMouseEnter (ev, vRef) {
@@ -247,6 +288,7 @@
         if (type !== this.background.temp.linemode && vRef !== this.background.temp.vRef) {
           ev.stopPropagation()
           let $target = $(ev.target)
+          console.log({id: vRef.id, port: $(this.background.temp.evRef.target).attr('story-name')})
           let endPosition = $target.offset()
           let scrollX = $('#draw-area').prop('scrollLeft')
           let scrollY = $('#draw-area').prop('scrollTop')
