@@ -322,6 +322,8 @@
       },
       lineMove () {
         let vRef = this.layout.movingObject.vRef
+        let scrollX = $('#draw-area').prop('scrollLeft')
+        let scrollY = $('#draw-area').prop('scrollTop')
         _.each(vRef.ports.out, (v, k) => {
           let links = v.links
           if (!_.isArray(links)) return
@@ -331,10 +333,10 @@
             let posFrom = selfEl.offset()
             let posTo = targetEl.offset()
             // map
-            let x1 = posFrom.left + 8
-            let y1 = posFrom.top + 8
-            let x2 = posTo.left + 8
-            let y2 = posTo.top + 8
+            let x1 = scrollX + posFrom.left + 8
+            let y1 = scrollY + posFrom.top + 8
+            let x2 = scrollX + posTo.left + 8
+            let y2 = scrollY + posTo.top + 8
             // draw
             link._line.line.plot([this.calcuPolyline(x1, y1, x2, y2, 'out')])
             link._line.startSquare.cx(x1).cy(y1)
@@ -350,10 +352,10 @@
             let posFrom = selfEl.offset()
             let posTo = targetEl.offset()
             // map
-            let x1 = posFrom.left + 8
-            let y1 = posFrom.top + 8
-            let x2 = posTo.left + 8
-            let y2 = posTo.top + 8
+            let x1 = scrollX + posFrom.left + 8
+            let y1 = scrollY + posFrom.top + 8
+            let x2 = scrollX + posTo.left + 8
+            let y2 = scrollY + posTo.top + 8
             // draw
             link._line.line.plot([this.calcuPolyline(x2, y2, x1, y1, 'out')])
             link._line.startSquare.cx(x2).cy(y2)
