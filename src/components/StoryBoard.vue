@@ -2,7 +2,7 @@
   #story-board(:class="{moving: layout.isMoving}", :style="{width: width + 'px', height: height + 'px'}")
     svg#line-background
     #draw-area(@scroll="onscroll")
-      button(@click="addnew()") +
+      button(@click="addNewStory()") +
       button(@click="runStory()") Play
       text-card(
         v-for="story in stories",
@@ -77,12 +77,7 @@
             vRef: null
           }
         },
-        idinc: 5,
-        tempLine: null,
-        drawing: false,
-        tempRect: null,
-        offset: null,
-        startPos: [],
+        idinc: 2,
         stories: [{
           id: 0,
           type: 'base.main',
@@ -101,66 +96,14 @@
             }
           },
           params: {
-            'text': '【Start】\n'
+            'text': '【Start】'
           }
         }, {
-          id: 2,
-          type: 'base.text',
-          layout: {
-            left: 550 + 'px',
-            top: 100 + 'px'
-          },
-          ports: {
-            in: {
-              content: {
-                name: 'content',
-                select: 'random',
-                links: []
-              }
-            },
-            out: {
-              content: {
-                name: 'content',
-                select: 'random',
-                links: []
-              }
-            }
-          },
-          params: {
-            text: '今天天气非常不错。\n'
-          }
-        }, {
-          id: 3,
-          type: 'base.text',
-          layout: {
-            left: 550 + 'px',
-            top: 250 + 'px'
-          },
-          ports: {
-            in: {
-              content: {
-                name: 'content',
-                select: 'random',
-                links: []
-              }
-            },
-            out: {
-              content: {
-                name: 'content',
-                select: 'random',
-                links: []
-              }
-            }
-          },
-          params: {
-            text: '阳光照在身上暖洋洋的，感觉是个好天气呢。\n'
-          }
-        }, {
-          id: 4,
+          id: 1,
           type: 'base.log',
           layout: {
-            left: 1050 + 'px',
-            top: 150 + 'px'
+            left: 500 + 'px',
+            top: 100 + 'px'
           },
           ports: {
             in: {
@@ -291,7 +234,10 @@
           // Add to data
           let startPort = this.background.temp.port
           let originVRef = this.background.temp.vRef
-          if (_.findIndex(originVRef.ports.out[startPort].links, o => o.id === vRef.id) > -1) return
+          if (_.findIndex(originVRef.ports.out[startPort].links, o => o.id === vRef.id) > -1) {
+            this.cleanTempLine()
+            return
+          }
           let outObj = { id: vRef.id, port: $(this.background.temp.evRef.target).attr('story-name'), _line: {} }
           let inObj = { id: originVRef.id, port: startPort, _line: {} }
           inObj._line.group = outObj._line.group = this.background.temp.group
@@ -415,6 +361,36 @@
           this.background.temp.drawing = false
           this.layout.isMoving = false
         }
+      },
+      addNewStory () {
+        let story = {
+          id: this.idinc++,
+          type: 'base.text',
+          layout: {
+            left: 550 + 'px',
+            top: 250 + 'px'
+          },
+          ports: {
+            in: {
+              content: {
+                name: 'content',
+                select: 'random',
+                links: []
+              }
+            },
+            out: {
+              content: {
+                name: 'content',
+                select: 'random',
+                links: []
+              }
+            }
+          },
+          params: {
+            text: '双击内容进入编辑模式。'
+          }
+        }
+        this.stories.push(story)
       },
       cleanTempLine () {
         this.background.temp.group.remove()

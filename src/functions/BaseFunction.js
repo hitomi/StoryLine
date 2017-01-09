@@ -35,7 +35,7 @@ export default class BaseFunction {
     link: BaseFunction.text
   }
   static text (option = {'content': ''}, params = {'text': ''}) {
-    let content = option.content
+    let content = option.content + '\n'
     let text = params.text
     return {
       content: content + text
@@ -56,7 +56,7 @@ export default class BaseFunction {
     link: BaseFunction.log
   }
   static log (option = {'content': ''}, params = {'text': ''}) {
-    let content = option.content + params.text
+    let content = option.content + '\n' + params.text
     console.log(content)
   }
 }

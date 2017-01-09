@@ -10,16 +10,24 @@
         li(v-for='outp in ports.out')
           span.port(@mousedown='startLinkOut', @mouseup='endLinkOut', @mouseenter='enterLinkOut', @mouseleave='leaveLinkOut', :story-name='outp.name', :class="{active: outp.links && outp.links.length}")
           | {{ outp.name }}
-    .params
-      p {{params.text}}
+    .params(:contenteditable='edit', :class='{edit: edit}', @dblclick="changeEditState") {{params.text}}
 </template>
 <script>
+  import $ from 'jquery'
+
   export default {
     props: ['story'],
     data () {
+      this.$set(this.story, 'edit', false)
       return this.story
     },
     methods: {
+      changeEditState () {
+        this.story.edit = !this.story.edit
+        if (this.story.edit === false) {
+          this.params.text = $('.params', this.$el).text()
+        }
+      },
       titleMouseEnter (ev) {
         this.$emit('titleMouseEnter', ev, this)
       },
@@ -165,8 +173,11 @@
       padding: 8px;
       background: #f5f5f5;
       outline: none;
+      line-height: 1.5;
+      &.edit {
+        background: #deffe9;
+      }
       > p {
-        line-height: 1.5;
         margin: 0;
       }
     }
