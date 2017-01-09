@@ -236,6 +236,15 @@
             link._line.line = link._line.group.polyline([this.calcuPolyline(x1, y1, x2, y2, 'out')]).fill('none').stroke({ color: '#0099af', width: 8, linejoin: 'bevel' })
             link._line.startSquare = link._line.group.rect(16, 16).cx(x1).cy(y1).radius(4).fill('#0099af')
             link._line.endSquare = link._line.group.rect(16, 16).cx(x2).cy(y2).radius(4).fill('#0099af')
+            // copy to in port
+            let inCard = this.stories[_.findIndex(this.stories, (o) => o.id === link.id)]
+            let inLinks = inCard.ports.in[link.port].links
+            let inLink = inLinks[_.findIndex(inLinks, (o) => o.id === story.id)]
+            inLink._line = {}
+            inLink._line.group = link._line.group
+            inLink._line.line = link._line.line
+            inLink._line.startSquare = link._line.startSquare
+            inLink._line.endSquare = link._line.endSquare
           })
         })
       })
@@ -311,17 +320,61 @@
         let scrollTop = target.scrollTop
         this.background.svgCanvas.viewbox({ x: scrollLeft, y: scrollTop, width: this.width, height: this.height })
       },
+      lineMove () {
+        let vRef = this.layout.movingObject.vRef
+        _.each(vRef.ports.out, (v, k) => {
+          let links = v.links
+          if (!_.isArray(links)) return
+          let selfEl = $(`[story-id="${vRef.id}"] .out [story-name="${k}"]`)
+          _.each(links, (link) => {
+            let targetEl = $(`[story-id="${link.id}"] .in [story-name="${link.port}"]`)
+            let posFrom = selfEl.offset()
+            let posTo = targetEl.offset()
+            // map
+            let x1 = posFrom.left + 8
+            let y1 = posFrom.top + 8
+            let x2 = posTo.left + 8
+            let y2 = posTo.top + 8
+            // draw
+            link._line.line.plot([this.calcuPolyline(x1, y1, x2, y2, 'out')])
+            link._line.startSquare.cx(x1).cy(y1)
+            link._line.endSquare.cx(x2).cy(y2)
+          })
+        })
+        _.each(vRef.ports.in, (v, k) => {
+          let links = v.links
+          if (!_.isArray(links)) return
+          let selfEl = $(`[story-id="${vRef.id}"] .in [story-name="${k}"]`)
+          _.each(links, (link) => {
+            let targetEl = $(`[story-id="${link.id}"] .out [story-name="${link.port}"]`)
+            let posFrom = selfEl.offset()
+            let posTo = targetEl.offset()
+            // map
+            let x1 = posFrom.left + 8
+            let y1 = posFrom.top + 8
+            let x2 = posTo.left + 8
+            let y2 = posTo.top + 8
+            // draw
+            link._line.line.plot([this.calcuPolyline(x2, y2, x1, y1, 'out')])
+            link._line.startSquare.cx(x2).cy(y2)
+            link._line.endSquare.cx(x1).cy(y1)
+          })
+        })
+      },
       onMouseMove (ev) {
         // Return if moving flag is false
         if (this.layout.movingObject.status > 0) {
-          let originX = this.layout.movingObject.evRef.clientX
-          let originY = this.layout.movingObject.evRef.clientY
+          let evRef = this.layout.movingObject.evRef
+          let originX = evRef.clientX
+          let originY = evRef.clientY
           let moveX = ev.clientX - originX
           let moveY = ev.clientY - originY
           this.layout.movingObject.pos.tempX = this.layout.movingObject.pos.x + moveX
           this.layout.movingObject.pos.tempY = this.layout.movingObject.pos.y + moveY
           this.layout.movingObject.vRef.layout.left = this.layout.movingObject.pos.tempX + 'px'
           this.layout.movingObject.vRef.layout.top = this.layout.movingObject.pos.tempY + 'px'
+          // Move Lines
+          this.lineMove()
         }
         if (this.background.temp.drawing) {
           let scrollX = $('#draw-area').prop('scrollLeft')
@@ -349,6 +402,7 @@
           this.layout.movingObject.vRef.layout.transition = 'left .5s ease, top .5s ease'
           this.layout.movingObject.pos.x = this.layout.movingObject.pos.tempX
           this.layout.movingObject.pos.y = this.layout.movingObject.pos.tempY
+          this.lineMove()
           this.layout.movingObject.vRef.layout.boxShadow = 'none'
           this.layout.movingObject.evRef = null
           this.layout.movingObject.vRef = null
