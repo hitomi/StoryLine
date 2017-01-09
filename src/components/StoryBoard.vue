@@ -72,6 +72,7 @@
             startPos: null,
             offset: null,
             linemode: null,
+            port: null,
             evRef: null,
             vRef: null
           }
@@ -95,13 +96,7 @@
               content: {
                 name: 'content',
                 select: 'random',
-                links: [{
-                  id: 2,
-                  port: 'content'
-                }, {
-                  id: 3,
-                  port: 'content'
-                }]
+                links: []
               }
             }
           },
@@ -120,20 +115,14 @@
               content: {
                 name: 'content',
                 select: 'random',
-                links: [{
-                  id: 0,
-                  port: 'content'
-                }]
+                links: []
               }
             },
             out: {
               content: {
                 name: 'content',
                 select: 'random',
-                links: [{
-                  id: 4,
-                  port: 'content'
-                }]
+                links: []
               }
             }
           },
@@ -152,20 +141,14 @@
               content: {
                 name: 'content',
                 select: 'random',
-                links: [{
-                  id: 0,
-                  port: 'content'
-                }]
+                links: []
               }
             },
             out: {
               content: {
                 name: 'content',
                 select: 'random',
-                links: [{
-                  id: 4,
-                  port: 'content'
-                }]
+                links: []
               }
             }
           },
@@ -184,13 +167,7 @@
               content: {
                 name: 'content',
                 select: 'random',
-                links: [{
-                  id: 2,
-                  port: 'content'
-                }, {
-                  id: 3,
-                  port: 'content'
-                }]
+                links: []
               }
             },
             out: {}
@@ -285,6 +262,7 @@
         }
         $target.addClass('active')
         this.background.temp.linemode = type
+        this.background.temp.port = $target.attr('story-name')
         this.background.temp.vRef = vRef
         this.background.temp.evRef = ev
         this.background.temp.group = this.background.svgCanvas.group()
@@ -297,7 +275,6 @@
         if (type !== this.background.temp.linemode && vRef !== this.background.temp.vRef) {
           ev.stopPropagation()
           let $target = $(ev.target)
-          console.log({id: vRef.id, port: $(this.background.temp.evRef.target).attr('story-name')})
           let endPosition = $target.offset()
           let scrollX = $('#draw-area').prop('scrollLeft')
           let scrollY = $('#draw-area').prop('scrollTop')
@@ -309,9 +286,28 @@
           let y2 = scrollY + endPosition.top - yOffset + 8
           this.background.temp.line.plot(this.calcuPolyline(x1, y1, x2, y2, this.background.temp.linemode))
           this.background.temp.endSquare.cx(x2).cy(y2)
-          $target.addClass('active')
           this.background.temp.drawing = false
           this.layout.isMoving = false
+          // Add to data
+          let startPort = this.background.temp.port
+          let originVRef = this.background.temp.vRef
+          if (_.findIndex(originVRef.ports.out[startPort].links, o => o.id === vRef.id) > -1) return
+          let outObj = { id: vRef.id, port: $(this.background.temp.evRef.target).attr('story-name'), _line: {} }
+          let inObj = { id: originVRef.id, port: startPort, _line: {} }
+          inObj._line.group = outObj._line.group = this.background.temp.group
+          inObj._line.line = outObj._line.line = this.background.temp.line
+          inObj._line.startSquare = outObj._line.startSquare = this.background.temp.startSquare
+          inObj._line.endSquare = outObj._line.endSquare = this.background.temp.endSquare
+          originVRef.ports.out[startPort].links.push(outObj)
+          vRef.ports.in[$(this.background.temp.evRef.target).attr('story-name')].links.push(inObj)
+          // copy to in
+
+          // set null
+          this.background.temp.group = null
+          this.background.temp.line = null
+          this.background.temp.startSquare = null
+          this.background.temp.endSquare = null
+          // -- END
         }
       },
       onscroll (ev) {
