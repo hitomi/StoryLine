@@ -19,7 +19,7 @@
 </template>
 <script>
   import TextCard from './cards/TextCard.vue'
-  import SVG from 'svgjs'
+  import SVG from 'svg.js'
   import $ from 'jquery'
   import Interpreter from '../interpreter'
 
@@ -69,7 +69,9 @@
             endSquare: null,
             startPos: null,
             offset: null,
-            linemode: null
+            linemode: null,
+            evRef: null,
+            vRef: null
           }
         },
         idinc: 5,
@@ -231,7 +233,10 @@
           x: scrollX + startPosition.left - this.background.temp.offset.left + 8,
           y: scrollY + startPosition.top - this.background.temp.offset.top + 8
         }
+        $target.addClass('active')
         this.background.temp.linemode = type
+        this.background.temp.vRef = vRef
+        this.background.temp.evRef = ev
         this.background.temp.group = this.background.svgCanvas.group()
         this.background.temp.line = this.background.temp.group.polyline([[this.background.temp.startPos.x, this.background.temp.startPos.y]]).fill('none').stroke({ color: '#0099af', width: 8, linejoin: 'bevel' })
         this.background.temp.startSquare = this.background.temp.group.rect(16, 16).cx(this.background.temp.startPos.x).cy(this.background.temp.startPos.y).radius(4).fill('#0099af')
@@ -239,7 +244,7 @@
         this.background.temp.drawing = true
       },
       endLink (ev, vRef, type) {
-        if (type !== this.background.temp.linemode) {
+        if (type !== this.background.temp.linemode && vRef !== this.background.temp.vRef) {
           ev.stopPropagation()
           let $target = $(ev.target)
           let endPosition = $target.offset()
@@ -253,6 +258,7 @@
           let y2 = scrollY + endPosition.top - yOffset + 8
           this.background.temp.line.plot(this.calcuPolyline(x1, y1, x2, y2, this.background.temp.linemode))
           this.background.temp.endSquare.cx(x2).cy(y2)
+          $target.addClass('active')
           this.background.temp.drawing = false
           this.layout.isMoving = false
         }
@@ -310,6 +316,8 @@
         // line mode
         if (this.background.temp.drawing) {
           this.cleanTempLine()
+          let $originTarget = $(this.background.temp.evRef.target)
+          $originTarget.removeClass('active')
           this.background.temp.drawing = false
           this.layout.isMoving = false
         }
