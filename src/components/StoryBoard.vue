@@ -5,9 +5,11 @@
       .toolbar
         button(@click="addNewStory()") +
         button(@click="runStory()") Play
+        button(@click="saveStory()") Save
+        button(@click="loadStory()") Load
         button(@click="exportStories()") Export
         button(@click="togglePanel()") Hide Output: {{ hideOutputPanel }}
-        .output(v-html='output', :class='{ hide: hideOutputPanel }')
+        textarea.output(v-model='output', :class='{ hide: hideOutputPanel }')
       text-card(
         v-for="story in stories",
         :story="story",
@@ -28,6 +30,7 @@
   import $ from 'jquery'
   import _ from 'lodash'
   import Interpreter from '../interpreter'
+  import localforage from 'localforage'
 
   export default {
     props: ['width', 'height'],
@@ -91,7 +94,7 @@
           layout: {
             left: 100 + 'px',
             top: 100 + 'px',
-            width: 200 + 'px'
+            width: 80 + 'px'
           },
           ports: {
             in: {},
@@ -114,7 +117,7 @@
           layout: {
             left: 500 + 'px',
             top: 100 + 'px',
-            width: 200 + 'px'
+            width: 80 + 'px'
           },
           ports: {
             in: {
@@ -146,40 +149,7 @@
       window.addEventListener('mouseup', this.mouseup)
       window.addEventListener('mousemove', this.onMouseMove)
       // Create SVG Canvas
-      this.background.svgCanvas = SVG('line-background').size('100%', '100%')
-      // Draw Lines
-      _.each(this.stories, (story) => {
-        _.each(story.ports.out, (v, k) => {
-          let links = v.links
-          if (!_.isArray(links)) return
-          let selfEl = $(`[story-id="${story.id}"] .out [story-name="${k}"]`)
-          _.each(links, (link) => {
-            let targetEl = $(`[story-id="${link.id}"] .in [story-name="${link.port}"]`)
-            let posFrom = selfEl.offset()
-            let posTo = targetEl.offset()
-            // map
-            let x1 = posFrom.left + 8
-            let y1 = posFrom.top + 8
-            let x2 = posTo.left + 8
-            let y2 = posTo.top + 8
-            // draw
-            link._line = {}
-            link._line.group = this.background.svgCanvas.group().stroke({ color: '#0099af', width: 8, linejoin: 'bevel' }).fill('#0099af')
-            link._line.line = link._line.group.polyline([this.calcuPolyline(x1, y1, x2, y2, 'out')]).fill('none')
-            link._line.startSquare = link._line.group.rect(16, 16).cx(x1).cy(y1).radius(4).fill('#0099af').stroke({ width: 0 })
-            link._line.endSquare = link._line.group.rect(16, 16).cx(x2).cy(y2).radius(4).fill('#0099af').stroke({ width: 0 })
-            // copy to in port
-            let inCard = this.stories[_.findIndex(this.stories, (o) => o.id === link.id)]
-            let inLinks = inCard.ports.in[link.port].links
-            let inLink = inLinks[_.findIndex(inLinks, (o) => o.id === story.id)]
-            inLink._line = {}
-            inLink._line.group = link._line.group
-            inLink._line.line = link._line.line
-            inLink._line.startSquare = link._line.startSquare
-            inLink._line.endSquare = link._line.endSquare
-          })
-        })
-      })
+      this.drawLines()
     },
     methods: {
       titleMouseEnter (ev, vRef) {
@@ -453,16 +423,52 @@
           [x2 + fix * linePrefix, y2]
         ]
       },
+      drawLines () {
+        if (this.background.svgCanvas !== null) this.background.svgCanvas.clear()
+        this.background.svgCanvas = SVG('line-background').size('100%', '100%')
+        // Draw Lines
+        _.each(this.stories, (story) => {
+          _.each(story.ports.out, (v, k) => {
+            let links = v.links
+            if (!_.isArray(links)) return
+            let selfEl = $(`[story-id="${story.id}"] .out [story-name="${k}"]`)
+            _.each(links, (link) => {
+              let targetEl = $(`[story-id="${link.id}"] .in [story-name="${link.port}"]`)
+              let posFrom = selfEl.offset()
+              let posTo = targetEl.offset()
+              // map
+              let x1 = posFrom.left + 8
+              let y1 = posFrom.top + 8
+              let x2 = posTo.left + 8
+              let y2 = posTo.top + 8
+              // draw
+              link._line = {}
+              link._line.group = this.background.svgCanvas.group().stroke({ color: '#0099af', width: 8, linejoin: 'bevel' }).fill('#0099af')
+              link._line.line = link._line.group.polyline([this.calcuPolyline(x1, y1, x2, y2, 'out')]).fill('none')
+              link._line.startSquare = link._line.group.rect(16, 16).cx(x1).cy(y1).radius(4).fill('#0099af').stroke({ width: 0 })
+              link._line.endSquare = link._line.group.rect(16, 16).cx(x2).cy(y2).radius(4).fill('#0099af').stroke({ width: 0 })
+              // copy to in port
+              let inCard = this.stories[_.findIndex(this.stories, (o) => o.id === link.id)]
+              let inLinks = inCard.ports.in[link.port].links
+              let inLink = inLinks[_.findIndex(inLinks, (o) => o.id === story.id)]
+              inLink._line = {}
+              inLink._line.group = link._line.group
+              inLink._line.line = link._line.line
+              inLink._line.startSquare = link._line.startSquare
+              inLink._line.endSquare = link._line.endSquare
+            })
+          })
+        })
+      },
       runStory () {
         let story = new Interpreter(this.stories)
-        this.output = story.run().replace(/\n/g, '<br>')
+        this.output = story.run()
         this.hideOutputPanel = false
       },
       togglePanel () {
         this.hideOutputPanel = !this.hideOutputPanel
       },
-      exportStories () {
-        // TODO export
+      doExport () {
         let exportData = {
           idinc: this.idinc,
           stories: []
@@ -488,7 +494,43 @@
           obj.params = _.pick(story.params, ['text'])
           exportData.stories.push(obj)
         })
-        console.log(JSON.stringify(exportData))
+        return JSON.stringify(exportData)
+      },
+      exportStories () {
+        this.output = this.doExport()
+        this.hideOutputPanel = false
+      },
+      saveStory () {
+        // s
+        let key = window.prompt('key', 'demo')
+        if (key !== null) {
+          localforage.setItem(key, this.doExport()).then(() => window.alert('Saved!')).catch(err => console.log(err))
+        }
+      },
+      loadStory () {
+        // l
+        let key = window.prompt('key', 'demo')
+        if (key !== null) {
+          localforage.getItem(key).then((v) => {
+            if (v !== null) {
+              let saved = JSON.parse(v)
+              if (_.isObject(saved)) {
+                this.idinc = saved.idinc
+                this.stories = []
+                this.$nextTick(() => {
+                  this.stories = saved.stories
+                  this.needReload = true
+                })
+              }
+            }
+          }).catch(err => console.log(err))
+        }
+      }
+    },
+    updated () {
+      if (this.needReload) {
+        this.drawLines()
+        this.needReload = false
       }
     }
   }
@@ -533,11 +575,6 @@
     bottom: 0;
     opacity: 0.8;
     overflow: scroll;
-    pointer-events: none;
-  }
-
-  #draw-area * {
-    pointer-events: auto;
   }
 
   .toolbar {
@@ -549,10 +586,12 @@
 
   .output {
     position: fixed;
-    left: 20px;
-    right: 20px;
+    display: block;
+    left: 0px;
+    top: 24px;
     bottom: 20px;
-    height: 233px;
+    width: 242px;
+    box-sizing: border-box;
     overflow-x: scroll;
     background: #fff;
     opacity: 0.8;
