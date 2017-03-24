@@ -1,6 +1,6 @@
 # story-lines
 
-> A node-based editor
+> A node-based story editor
 
 ## Build Setup
 
